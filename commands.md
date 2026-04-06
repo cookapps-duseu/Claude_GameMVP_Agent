@@ -16,6 +16,7 @@
 | QA PASS | `/game-sprint N+1` | 다음 스프린트 진행 |
 | 마지막 스프린트 PASS | (종료) | output/YYYY-MM-DD-GameTitle/ 폴더 확인 |
 | 현재 상태 모를 때 | `/game-status` | 상태 요약 + 다음 커맨드 안내 |
+| 충실도 변경 | `/game-fidelity N` | visual_fidelity 업데이트 (N: 1~6) |
 
 ## 에이전트별 다음 커맨드 규칙
 
@@ -58,6 +59,7 @@ relax_mode: false          # true이면 Evaluator 기준 완화 적용
 auto_proceed: true         # true이면 승인 프롬프트 생략
 escalation_count: 0        # 자동 에스컬레이션 횟수 (2 이상이면 강제 중단)
 pending_retry: false       # true이면 retry_feedback.md 대기 상태
+visual_fidelity: 4     # 1~6, 스프린트 1 시작 전 설정 (기본값 없음 — 반드시 입력)
 last_command: /game-init
 next_command: /game-sprint 1
 output_folder: ""          # Planner가 채움 (예: 2026-04-03-DragonSlayer)
