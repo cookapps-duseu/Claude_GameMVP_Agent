@@ -12,16 +12,25 @@ TodoWrite로 아래 태스크를 생성하세요:
 
 각 태스크를 시작할 때 in_progress, 완료 시 completed로 표시하세요.
 
-## 토큰 로깅 규칙
+## 토큰 로깅 및 출력 규칙
 
-각 서브에이전트 완료 후 `artifacts/token_log.md`에 행을 추가하세요.
+각 서브에이전트 완료 후:
 
+1. `artifacts/token_log.md`에 행 추가:
 ```markdown
 | [YYYY-MM-DD HH:MM] | BrowserTester | 스프린트 $ARGUMENTS 브라우저 테스트 | [total_tokens 값] |
 | [YYYY-MM-DD HH:MM] | Evaluator | 스프린트 $ARGUMENTS QA | [total_tokens 값] |
 ```
 
-서브에이전트 결과에서 `total_tokens: NNNNN` 값을 추출해 기록합니다. 없으면 "unknown".
+2. 아래 형식으로 대화창에 즉시 출력:
+```
+💰 토큰 현황 ([에이전트명])
+  이번 호출:    N,NNN 토큰
+  스프린트 $ARGUMENTS 소계: token_log.md에서 이번 스프린트 행 합산
+  전체 누적:    N,NNN 토큰  ([전체합/200000*100]% / 200K 기준)
+```
+
+서브에이전트 결과에서 `total_tokens: NNNNN` 값을 추출합니다. 없으면 "unknown"으로 기록하고 소계/누적에서 제외.
 
 ## 사전 확인
 
@@ -100,10 +109,26 @@ Evaluator가 `artifacts/qa_report.md`를 생성하면 즉시 토큰을 token_log
 3. **마지막 스프린트가 아닌 경우:** 즉시 `/game-sprint [N+1]` 실행.
 
 4. **마지막 스프린트인 경우:**
+
+   `artifacts/token_log.md`를 읽어 전체 토큰 합산 후 아래 형식으로 출력:
+
    ```
    🎮 모든 스프린트 완료!
    최종 게임: output/[output_folder]/game.html
    데이터 파일: output/[output_folder]/*.csv
+
+   💰 전체 토큰 사용량
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Planner:         N,NNN 토큰
+     Generator(계약): N,NNN 토큰
+     Generator(구현): N,NNN 토큰
+     BrowserTester:   N,NNN 토큰
+     Evaluator:       N,NNN 토큰
+   ─────────────────────────────
+     총합:            N,NNN 토큰
+     200K 대비:       N.N%
+     (200K × N.N회 분량)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
    CSV 파일을 Excel에서 수정 후 브라우저를 새로고침하면 게임에 반영됩니다.
    ```

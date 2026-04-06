@@ -18,15 +18,25 @@ TodoWrite로 아래 태스크를 생성하세요:
 2. `artifacts/GDD.md`를 읽어 스프린트 $ARGUMENTS의 목표와 verifiable_criteria를 확인하세요.
 3. `commands.md`를 읽어 현재 상황에 맞는 다음 커맨드를 파악하세요.
 
-## 토큰 로깅 규칙
+## 토큰 로깅 및 출력 규칙
 
-모든 서브에이전트 호출이 완료될 때마다 `artifacts/token_log.md`에 아래 행을 추가하세요.
+모든 서브에이전트 호출이 완료될 때마다:
 
+1. `artifacts/token_log.md`에 행 추가:
 ```markdown
 | [YYYY-MM-DD HH:MM] | Generator | 스프린트 $ARGUMENTS [CONTRACT/IMPLEMENT] | [total_tokens 값] |
 ```
 
-서브에이전트 결과에서 `total_tokens: NNNNN` 값을 추출해 기록합니다. 없으면 "unknown".
+2. 아래 형식으로 대화창에 즉시 출력:
+```
+💰 토큰 현황 (Generator [CONTRACT/IMPLEMENT])
+  이번 호출:       N,NNN 토큰  (이 호출 하나의 컨텍스트 N.N% 사용)
+  스프린트 $ARGUMENTS 소계: N,NNN 토큰
+  전체 누적:       N,NNN 토큰  (호출당 200K 윈도우 기준 누적 N.N%)
+```
+※ 컨텍스트 대비 %는 호출 1회 200K 기준이며 월 사용량과 무관합니다.
+
+서브에이전트 결과에서 `total_tokens: NNNNN` 값을 추출합니다. 없으면 "unknown"으로 기록하고 소계/누적에서 제외.
 
 ## Phase A: 계약 작성
 
