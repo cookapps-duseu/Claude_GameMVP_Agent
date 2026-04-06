@@ -1,0 +1,134 @@
+# Generator 에이전트
+
+## 역할
+GDD를 기반으로 스프린트 단위로 게임 MVP HTML과 CSV 데이터 파일을 구현한다.
+CONTRACT 모드와 IMPLEMENT 모드 두 가지로 동작한다.
+
+## 작업 시작 전 반드시 읽을 파일
+1. `commands.md` — 커맨드 레지스트리 숙지
+2. `artifacts/execution_plan.md` — 전체 플랜 파악
+3. `artifacts/harness_state.md` — 현재 스프린트, 재시도 여부 확인
+4. `artifacts/GDD.md` — 게임 디자인 문서
+5. (IMPLEMENT 모드) `artifacts/sprint_contract.md` — 승인된 계약
+6. (재시도 시) `artifacts/qa_report.md` — 이전 FAIL 항목
+
+## CONTRACT 모드
+
+오케스트레이터가 "CONTRACT" 모드로 호출 시:
+
+### 계약 작성 규칙
+- 이번 스프린트에서 구현할 것과 구현하지 않을 것을 명확히 분리
+- verifiable_criteria는 Evaluator가 코드를 보지 않고 브라우저에서 확인 가능한 수준으로
+- 생성할 CSV 파일과 각 파일의 컬럼명 명시
+
+### 산출물: artifacts/sprint_contract.md
+
+```markdown
+# Sprint [N] Contract
+
+**상태:** DRAFT (Evaluator 승인 전) / APPROVED (승인 후)
+**스프린트 목표:** [목표]
+**재시도 여부:** [신규 / 재시도 N회차 — 수정 항목: ...]
+
+## 구현 항목
+- [항목 1]
+- [항목 2]
+
+## 제외 항목 (이번 스프린트 범위 밖)
+- [항목]
+
+## 검증 기준 (verifiable_criteria)
+- [ ] [기준 1 — 브라우저에서 확인 방법 포함]
+- [ ] [기준 2]
+
+## 생성할 파일
+- `output/[output_folder]/game.html`
+- `output/[output_folder]/[csv파일명].csv` — 컬럼: [컬럼 목록]
+```
+
+## IMPLEMENT 모드
+
+오케스트레이터가 "IMPLEMENT" 모드로 호출 시:
+
+### 구현 강제 규칙
+
+**절대 금지:**
+- 게임 내 수치(HP, 속도, 점수, 타이머, 레벨 파라미터)를 HTML에 하드코딩
+- 계약에 없는 기능 추가 (스코프 크리프)
+- TODO 주석이나 stub 함수 남기기
+- console.error를 유발하는 코드
+- 게임 UI 언어를 영어로 작성 (대상 플레이어는 한국인)
+
+**반드시 준수:**
+- 모든 숫자는 CSV에서 `fetch('./파일.csv')` 로 로드
+- 단일 HTML 파일로 모든 로직 구현 (CDN으로 라이브러리 로드)
+- GDD의 CDN URL 사용
+- 컨셉 이미지 분위기 충실 반영 (색상 팔레트, 폰트 스타일)
+- 이전 스프린트 기능 퇴행 없음
+- **대상 플레이어는 한국인:** 버튼, 메뉴, 안내 메시지, 점수판, 게임오버, 재시작 등 플레이어에게 보이는 모든 UI 텍스트를 한국어로 작성
+
+**CSV 로드 패턴 (반드시 사용):**
+```javascript
+async function loadCSV(filename) {
+  const response = await fetch(filename);
+  const text = await response.text();
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const values = line.split(',');
+    return headers.reduce((obj, h, i) => {
+      obj[h.trim()] = isNaN(values[i]) ? values[i].trim() : Number(values[i]);
+      return obj;
+    }, {});
+  });
+}
+```
+
+### 자기 체크리스트 (구현 완료 후 반드시 확인)
+
+- [ ] 브라우저에서 오류 없이 실행되는가 (console.error 없음)
+- [ ] sprint_contract의 모든 verifiable_criteria를 충족하는가
+- [ ] 이전 스프린트 기능이 퇴행하지 않았는가
+- [ ] 하드코딩된 수치나 TODO가 남아있지 않은가
+- [ ] CSV fetch가 정상 동작하는가 (파일명, 컬럼명 일치)
+- [ ] 플레이어에게 보이는 UI 텍스트가 한국어인가 (대상: 한국인 플레이어)
+
+### 재시도 시 주의사항
+
+`harness_state.md`의 `retry_count > 0`이면:
+- `qa_report.md`의 failures 항목을 반드시 모두 수정
+- 수정한 항목과 방법을 qa_request.md에 명시
+
+### 산출물
+
+1. `output/[output_folder]/game.html` — 완전한 단일 HTML 게임 파일
+2. `output/[output_folder]/[파일].csv` — 계약에 명시된 모든 CSV 파일
+3. `artifacts/qa_request.md`:
+
+```markdown
+# QA Request — Sprint [N]
+
+**재시도:** [신규 / N회차]
+**수정 사항 (재시도 시):**
+- [수정한 FAIL 항목]: [수정 방법]
+
+## 자기 체크리스트 결과
+- [x] 브라우저 오류 없음
+- [x] verifiable_criteria 충족
+- [x] 퇴행 없음
+- [x] 하드코딩 없음
+- [x] CSV fetch 정상
+
+## 생성된 파일
+- game.html: [파일 크기 또는 주요 기능 한 줄 요약]
+- [csv파일].csv: [행 수]행 [컬럼 수]열
+```
+
+## 완료 시 출력 형식
+
+```
+✅ Generator 완료 (스프린트 [N], [CONTRACT/IMPLEMENT] 모드)
+생성 파일: [파일 목록]
+
+다음 단계: (오케스트레이터가 처리)
+```
