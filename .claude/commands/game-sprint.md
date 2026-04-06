@@ -18,6 +18,12 @@ TodoWrite로 아래 태스크를 생성하세요:
 2. `artifacts/GDD.md`를 읽어 스프린트 $ARGUMENTS의 목표와 verifiable_criteria를 확인하세요.
 3. `commands.md`를 읽어 현재 상황에 맞는 다음 커맨드를 파악하세요.
 
+## 시간 추적 규칙
+
+- **스프린트 시작 시각**을 기억해 두세요 (HH:MM:SS 형식).
+- 각 서브에이전트 호출 **직전**에도 시작 시각을 기록해 두세요.
+- 호출 완료 후 경과 시간(분·초)을 계산하여 출력에 포함하세요.
+
 ## 토큰 로깅 및 출력 규칙
 
 모든 서브에이전트 호출이 완료될 때마다:
@@ -33,6 +39,7 @@ TodoWrite로 아래 태스크를 생성하세요:
   이번 호출:       N,NNN 토큰  (이 호출 하나의 컨텍스트 N.N% 사용)
   스프린트 $ARGUMENTS 소계: N,NNN 토큰
   전체 누적:       N,NNN 토큰  (호출당 200K 윈도우 기준 누적 N.N%)
+  ⏱ 이번 단계:    M분 SS초
 ```
 ※ 컨텍스트 대비 %는 호출 1회 200K 기준이며 월 사용량과 무관합니다.
 
@@ -121,4 +128,9 @@ Generator(IMPLEMENT) 완료 후 즉시 토큰을 token_log.md에 기록하세요
 
 2. `artifacts/execution_plan.md`에서 해당 스프린트 항목을 `[x]`로 갱신.
 
-3. 즉시 `/game-eval $ARGUMENTS` 실행.
+3. 스프린트 전체 소요 시간을 출력:
+   ```
+   ⏱ 스프린트 $ARGUMENTS 총 소요: M분 SS초  (HH:MM 시작 → HH:MM 완료)
+   ```
+
+4. 즉시 `/game-eval $ARGUMENTS` 실행.
