@@ -13,6 +13,17 @@
 | "지금 어디야", "어디까지 했어", "상태 알려줘", "진행 상황" | `/game-status` |
 | "계속해줘", "다음 진행해줘", "이어서 해줘" | `harness_state.md`의 `next_command` 실행 |
 | "재시도해줘", "다시 시도해줘" + `pending_retry: true` 상태 | `harness_state.md` 확인 후 `/game-eval N` 실행 (retry_feedback.md 컨텍스트 포함) |
+| "충실도 바꿔줘", "더 비슷하게", "덜 비슷하게", "대충 해줘" + 숫자/키워드 | `harness_state.md`의 `visual_fidelity` 업데이트 후 고지 |
+| `/game-fidelity N` | `visual_fidelity` N으로 변경 |
+
+### 충실도 자연어 매핑
+
+| 사용자 발화 | visual_fidelity |
+|------------|----------------|
+| "느낌만", "대충", "그냥 대충" | 1~2 (문맥에 따라 판단) |
+| "비슷하게", "어느 정도" | 3~4 (문맥에 따라 판단) |
+| "최대한 똑같이", "정확하게" | 5~6 (문맥에 따라 판단) |
+| 숫자 직접 언급 ("3으로 해줘") | 해당 숫자 그대로 |
 
 경로가 메시지에 포함된 경우 그 경로를 인자로 사용합니다.
 경로가 없으면 `/game-init`을 인자 없이 실행합니다.
@@ -45,6 +56,7 @@
 | `/game-sprint N` | 스프린트 N 구현 (Generator 실행) |
 | `/game-eval N` | 스프린트 N QA 검증 (Evaluator 실행) |
 | `/game-status` | 현재 진행 상태 + 다음 커맨드 안내 |
+| `/game-fidelity N` | 비주얼 충실도 변경 (N: 1~6) |
 
 ## 파일 구조
 
