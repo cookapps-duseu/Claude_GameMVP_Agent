@@ -6,7 +6,7 @@
 TodoWrite로 아래 태스크를 생성하세요:
 1. 사전 확인 (harness_state, GDD, sprint_contract 읽기)
 2. Eval 로그 파일 기록
-3. Phase 1: BrowserTester 실행
+3. Phase 1: Playwright 브라우저 테스트 직접 실행
 4. Phase 2: Evaluator 실행
 5. 결과 처리
 
@@ -15,22 +15,21 @@ TodoWrite로 아래 태스크를 생성하세요:
 ## 시간 추적 규칙
 
 - **eval 시작 시각**을 기억해 두세요 (HH:MM:SS 형식).
-- 각 서브에이전트 호출 **직전**에도 시작 시각을 기록해 두세요.
-- 호출 완료 후 경과 시간(분·초)을 계산하여 출력에 포함하세요.
+- 각 Phase 시작 **직전**에도 시작 시각을 기록해 두세요.
+- Phase 완료 후 경과 시간(분·초)을 계산하여 출력에 포함하세요.
 
 ## 토큰 로깅 및 출력 규칙
 
-각 서브에이전트 완료 후:
+Evaluator 서브에이전트 완료 후:
 
 1. `artifacts/token_log.md`에 행 추가:
 ```markdown
-| [YYYY-MM-DD HH:MM] | BrowserTester | 스프린트 $ARGUMENTS 브라우저 테스트 | [total_tokens 값] |
 | [YYYY-MM-DD HH:MM] | Evaluator | 스프린트 $ARGUMENTS QA | [total_tokens 값] |
 ```
 
 2. 아래 형식으로 대화창에 즉시 출력:
 ```
-💰 토큰 현황 ([에이전트명])
+💰 토큰 현황 (Evaluator)
   이번 호출:    N,NNN 토큰
   스프린트 $ARGUMENTS 소계: token_log.md에서 이번 스프린트 행 합산
   전체 누적:    N,NNN 토큰  ([전체합/200000*100]% / 200K 기준)
@@ -51,7 +50,7 @@ TodoWrite로 아래 태스크를 생성하세요:
 1. `artifacts/retry_feedback.md`를 읽어 누적 컨텍스트 파악
 2. `harness_state.md` 업데이트: `retry_count: 0`, `pending_retry: false`
 3. Generator 서브에이전트를 retry_feedback.md의 전체 컨텍스트와 함께 호출하여 수정
-4. 수정 완료 후 Phase 1(BrowserTester)부터 재실행
+4. 수정 완료 후 Phase 1(브라우저 테스트)부터 재실행
 
 ## Eval 로그 파일 기록
 
@@ -74,18 +73,99 @@ TodoWrite로 아래 태스크를 생성하세요:
 현재: [retry_count] / 6
 ```
 
-## Phase 1: BrowserTester 서브에이전트 실행
+## Phase 1: Playwright 브라우저 테스트 (직접 실행)
 
-`agents/browser_tester.md`를 읽은 후 BrowserTester 서브에이전트를 호출하세요.
+**서브에이전트 없이 오케스트레이터가 직접 Playwright MCP 도구를 사용합니다.**
 
-BrowserTester에게 전달할 컨텍스트:
-- 스프린트 번호: $ARGUMENTS
-- game.html 경로: output/[output_folder]/game.html
-- GDD.md 경로: artifacts/GDD.md
-- harness_state.md 경로: artifacts/harness_state.md
-- screenshots 저장 경로: output/[output_folder]/screenshots/
+### Step 1 — 게임 로드
 
-BrowserTester가 `artifacts/browser_report.md`를 생성하면 즉시 토큰을 token_log.md에 기록하세요.
+`output/[output_folder]/` 폴더에 `game.html`이 있는지 확인하세요.
+해당 폴더에서 로컬 HTTP 서버를 실행하거나, 아래 절대경로로 file:// URL을 구성하세요:
+
+```
+file:///e:/Github/Claude_GameMVP_Agent/output/[output_folder]/game.html
+```
+
+`browser_navigate` 도구로 위 URL을 여세요.
+`browser_wait_for_timeout` 2000ms 대기.
+`browser_screenshot` 으로 초기 화면 저장: `output/[output_folder]/screenshots/01-initial.png`
+
+### Step 2 — GDD 기반 조작 시나리오
+
+GDD의 `game_type`을 확인하여 아래 시나리오 중 해당하는 것을 실행하세요:
+
+**tap/click 게임:**
+1. 화면 중앙 `browser_click` (게임 시작)
+2. `browser_screenshot` → `02-started.png`
+3. 1초 간격으로 화면 중앙 10회 `browser_click`
+4. `browser_screenshot` → `03-playing.png`
+5. 게임오버 화면 감지 후 재시작 버튼 `browser_click` 시도
+6. `browser_screenshot` → `04-restart.png`
+
+**platformer/action 게임:**
+1. `browser_press_key` Space 또는 Enter (게임 시작)
+2. `browser_screenshot` → `02-started.png`
+3. `browser_press_key` ArrowRight 3초 유지 → Space 3회 → ArrowLeft 1초
+4. `browser_screenshot` → `03-playing.png`
+5. 게임오버 후 재시작 키 입력
+6. `browser_screenshot` → `04-restart.png`
+
+**puzzle 게임:**
+1. `browser_click` 화면 클릭 (시작)
+2. `browser_screenshot` → `02-started.png`
+3. 화면 내 요소를 좌→우→중앙 순으로 `browser_click` 3회 반복
+4. `browser_screenshot` → `03-playing.png`
+5. 레벨 클리어 또는 실패 후 다음 액션 클릭
+6. `browser_screenshot` → `04-restart.png`
+
+**기타/알 수 없음:**
+- `browser_click` + `browser_press_key` 방향키 + Space 조합으로 진행
+
+### Step 3 — 콘솔 로그 수집
+
+`browser_console_messages` 도구로 콘솔 에러/경고 전체를 수집하세요.
+error / warning / info 레벨로 구분하세요.
+
+### Step 4 — browser_report.md 작성
+
+`artifacts/browser_report.md`를 아래 형식으로 작성하세요:
+
+```markdown
+# Browser Test Report — Sprint $ARGUMENTS
+**테스트일:** [YYYY-MM-DD]
+**game.html 경로:** output/[output_folder]/game.html
+**분석 방식:** Playwright MCP 실제 브라우저 실행
+
+## 콘솔 에러/경고
+| 레벨 | 메시지 | 소스/라인 |
+|------|--------|-----------|
+| error | [메시지] | [파일:라인] |
+
+(없으면 "콘솔 에러 없음")
+
+## 조작 로그
+| 단계 | 액션 | 스크린샷 | 결과 |
+|------|------|----------|------|
+| 1 | 게임 로드 | 01-initial.png | 정상/비정상 |
+| 2 | 게임 시작 | 02-started.png | 정상/비정상 |
+| 3 | 플레이 | 03-playing.png | 정상/비정상 |
+| 4 | 재시작 | 04-restart.png | 정상/비정상 |
+
+## 크래시/멈춤
+[없음 / 발생 시 단계와 증상 기술]
+
+## 총평
+[플레이 가능 여부, 주요 문제 1-3줄 요약]
+```
+
+browser_report.md 작성 완료 후 아래 형식으로 출력:
+```
+🌐 브라우저 테스트 완료 (스프린트 $ARGUMENTS)
+콘솔 에러: N건
+스크린샷: output/[folder]/screenshots/ (N장)
+결과: 플레이 가능 / 크래시 / 에러 N건
+⏱ 소요: M분 SS초
+```
 
 ## Phase 2: Evaluator 서브에이전트 실행
 
@@ -129,13 +209,13 @@ Evaluator가 `artifacts/qa_report.md`를 생성하면 즉시 토큰을 token_log
      Planner:         N,NNN 토큰
      Generator(계약): N,NNN 토큰
      Generator(구현): N,NNN 토큰
-     BrowserTester:   N,NNN 토큰
      Evaluator:       N,NNN 토큰
    ─────────────────────────────
      총합:            N,NNN 토큰
      200K 대비:       N.N%
      (200K × N.N회 분량)
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ※ 브라우저 테스트는 오케스트레이터 직접 실행 (별도 토큰 없음)
 
    ⏱ 전체 소요 시간
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -167,7 +247,7 @@ Evaluator가 `artifacts/qa_report.md`를 생성하면 즉시 토큰을 token_log
    - `artifacts/qa_report.md`의 실패 기준 + 재현 방법 전달
    - 크래시 직전 스크린샷 경로 전달
 
-4. Generator 수정 완료 후 Phase 1(BrowserTester)부터 즉시 재실행.
+4. Generator 수정 완료 후 Phase 1(브라우저 테스트)부터 즉시 재실행.
 
 ### FAIL — retry_count >= 6인 경우
 
