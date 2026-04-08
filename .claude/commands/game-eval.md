@@ -166,6 +166,42 @@ step 1이 10회 초과 실패 시: 나머지 step 전부 skip, browser_report에
 
 ---
 
+### Step 1.5 — 디버그 주입 (게임 로드 후)
+
+**game.html 백업:**
+`output/[output_folder]/game.html`을 읽어 `artifacts/debug_backup/game.html.bak`으로 복사한다.
+(폴더가 없으면 생성)
+
+**`window.__debug` 존재 여부 확인:**
+`browser_evaluate`로 아래를 실행한다:
+```javascript
+typeof window.__debug !== 'undefined'
+```
+- `true`이면: 기본 스키마가 이미 포함됨 → GDD 기반 추가 주입만 수행
+- `false`이면: Generator가 스키마를 미포함 → 검증 항목을 skip 처리하고 browser_report에 "window.__debug 없음" 기록
+
+**GDD game_type 기반 추가 주입:**
+
+GDD의 `game_type`을 확인하여 game.html을 Read 후 해당 함수에 아래 로깅 호출을 Edit으로 삽입한다:
+
+| game_type | 추가 주입 대상 |
+|-----------|-------------|
+| action/platformer | 점프 함수에 `eventLog.push({ event: "jump", ... })`, 착지 함수에 `eventLog.push({ event: "land", ... })`, 충돌 처리에 `eventLog.push({ event: "hit", ... })` |
+| tap/click | 클릭 핸들러에 `eventLog.push({ event: "click", value: score, ... })` |
+| puzzle | 이동/배치 함수에 `eventLog.push({ event: "move", value: moveCount, ... })`, 클리어 판정에 `eventLog.push({ event: "clear", ... })` |
+| 기타 | 주요 인터랙션 핸들러에 `eventLog.push({ event: "action", ... })` |
+
+삽입 코드 패턴:
+```javascript
+// 기존 코드 뒤에 한 줄 추가
+if (window.__debug) window.__debug.stats.eventLog.push({ event: "[이벤트명]", value: [관련값], timestamp: Date.now() });
+```
+
+**추가 주입 완료 후:**
+`browser_navigate`로 새로고침하여 주입된 코드 적용.
+
+---
+
 ### Step 2 — 게임 시작
 
 GDD의 `game_type`을 확인하여 시작 방식 결정:
