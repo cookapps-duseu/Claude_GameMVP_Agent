@@ -72,6 +72,71 @@ CONTRACT 모드와 IMPLEMENT 모드 두 가지로 동작한다.
   ⚠️ 비주얼 충실도 조정 (설정: N → 실제: N-1)
      - [요소명]: [사유] → [대체 방법]
   ```
+- **window.__debug 스키마 항상 포함:** game.html의 `<script>` 최상단(CSV loadCSV 함수 정의 직전)에 아래 디버그 객체를 반드시 삽입. `config` 필드는 GDD에서 읽은 실제 설계값으로 채운다.
+
+```javascript
+window.__debug = {
+  _startTime: Date.now(),
+  stats: {
+    attackCount: 0,
+    damageDealt: [],    // [{ amount: N, timestamp: ms }]
+    stateChanges: [],   // [{ from: "idle", to: "attack", timestamp: ms }]
+    eventLog: []        // [{ event: "jump", value: null, timestamp: ms }]
+  },
+  config: {
+    attackSpeed: null,      // GDD 설계값으로 채울 것 (예: 2)
+    playerHP: null,         // 플레이어 최대 HP
+    enemyHP: null,          // 기본 적 HP
+    damagePerHit: null      // 공격당 데미지 설계값
+  },
+  verify: {
+    getAttackRate: function() {
+      var elapsed = (Date.now() - window.__debug._startTime) / 1000;
+      return elapsed > 0 ? window.__debug.stats.attackCount / elapsed : 0;
+    },
+    getStateMismatch: function() {
+      var changes = window.__debug.stats.stateChanges;
+      var issues = [];
+      for (var i = 1; i < changes.length; i++) {
+        if (changes[i].from !== changes[i-1].to) {
+          issues.push({ index: i, expected: changes[i-1].to, actual: changes[i].from });
+        }
+      }
+      return issues;
+    },
+    getDamageMismatch: function() {
+      var expected = window.__debug.config.damagePerHit;
+      if (!expected) return [];
+      return window.__debug.stats.damageDealt.filter(function(d) {
+        return Math.abs(d.amount - expected) / expected > 0.2;
+      });
+    },
+    getSummary: function() {
+      return {
+        attackRate: window.__debug.verify.getAttackRate(),
+        stateMismatch: window.__debug.verify.getStateMismatch(),
+        damageMismatch: window.__debug.verify.getDamageMismatch(),
+        eventCounts: window.__debug.stats.eventLog.reduce(function(acc, e) {
+          acc[e.event] = (acc[e.event] || 0) + 1; return acc;
+        }, {})
+      };
+    }
+  }
+};
+```
+
+게임 로직 내 핵심 지점에 반드시 아래 로깅 호출 삽입:
+```javascript
+// 공격 발생 시
+window.__debug.stats.attackCount++;
+window.__debug.stats.eventLog.push({ event: "attack", value: damage, timestamp: Date.now() });
+
+// 데미지 적용 시
+window.__debug.stats.damageDealt.push({ amount: damage, timestamp: Date.now() });
+
+// 상태 전이 시 (예: idle → attack)
+window.__debug.stats.stateChanges.push({ from: prevState, to: newState, timestamp: Date.now() });
+```
 
 **CSV 로드 패턴 (반드시 사용):**
 ```javascript
@@ -98,6 +163,9 @@ async function loadCSV(filename) {
 - [ ] 하드코딩된 수치나 TODO가 남아있지 않은가
 - [ ] CSV fetch가 정상 동작하는가 (파일명, 컬럼명 일치)
 - [ ] 플레이어에게 보이는 UI 텍스트가 한국어인가 (대상: 한국인 플레이어)
+- [ ] window.__debug 객체가 <script> 최상단에 포함되어 있는가
+- [ ] window.__debug.config의 설계값이 GDD 수치로 채워져 있는가 (null 아님)
+- [ ] 핵심 로직(공격/데미지/상태 전이)에 __debug 로깅 호출이 삽입되어 있는가
 
 ### 재시도 시 주의사항
 
