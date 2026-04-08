@@ -178,7 +178,7 @@ step 1이 10회 초과 실패 시: 나머지 step 전부 skip, browser_report에
 typeof window.__debug !== 'undefined'
 ```
 - `true`이면: 기본 스키마가 이미 포함됨 → GDD 기반 추가 주입만 수행
-- `false`이면: Generator가 스키마를 미포함 → 검증 항목을 skip 처리하고 browser_report에 "window.__debug 없음" 기록
+- `false`이면: Generator가 스키마를 미포함 → browser_report에 "window.__debug 없음" 기록 후 Step 1.5 나머지 단계 skip, Step 2로 진행
 
 **GDD game_type 기반 추가 주입:**
 
@@ -198,7 +198,11 @@ if (window.__debug) window.__debug.stats.eventLog.push({ event: "[이벤트명]"
 ```
 
 **추가 주입 완료 후:**
-`browser_navigate`로 새로고침하여 주입된 코드 적용.
+`browser_navigate`로 새로고침 후 1500ms 대기하여 주입된 코드 적용 확인.
+
+**주입 실패 시 처리:**
+- 주입 대상 함수를 game.html에서 찾지 못한 경우: browser_report에 `[주입 skip: 함수 미발견]` 기록 후 해당 이벤트 주입만 skip
+- browser_navigate 새로고침 후 window.__debug가 여전히 undefined인 경우: browser_report에 `[주입 실패]` 기록하고 Step 2로 강제 진행 (디버그 검증 전체 skip)
 
 ---
 
