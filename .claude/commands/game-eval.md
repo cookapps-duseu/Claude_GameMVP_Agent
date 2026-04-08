@@ -75,6 +75,8 @@ Evaluator 서브에이전트 완료 후:
 
 ## Phase 1: Playwright 브라우저 테스트 (직접 실행)
 
+> **사전 준비:** `artifacts/harness_state.md`에서 읽은 `output_folder` 값을 이후 모든 경로의 `[output_folder]` 플레이스홀더에 치환하여 사용합니다.
+
 **서브에이전트 없이 오케스트레이터가 직접 Playwright MCP 도구를 사용합니다.**
 
 ### 인간형 조작 원칙
@@ -82,15 +84,13 @@ Evaluator 서브에이전트 완료 후:
 모든 클릭은 아래 방식으로 수행합니다. 하드코딩된 좌표(예: 항상 400,300) 사용을 금지합니다.
 
 **버튼 클릭 — DOM 스냅샷 우선:**
-1. `browser_snapshot`으로 클릭 가능한 요소(button, a, [role=button], canvas 등) 목록과 bounding box 확인
-2. 해당 요소의 bounding box 범위 내 임의 좌표 계산:
-   - x: left + (width × 랜덤 0.2~0.8)
-   - y: top + (height × 랜덤 0.2~0.8)
-3. 계산된 임의 좌표로 `browser_click`
+1. `browser_snapshot`으로 클릭 가능한 요소(button, a, [role=button], canvas 등) 목록 확인
+2. 클릭 대상 요소의 `ref` 값과 `element` 설명을 추출
+3. `browser_click(ref=..., element=...)`으로 클릭
 
 **스크린샷 fallback (DOM으로 못 찾을 경우):**
 - 스크린샷을 시각적으로 판단하여 버튼처럼 보이는 영역 특정
-- 해당 영역 내 임의 좌표 클릭 (정중앙 금지)
+- `browser_snapshot`에서 가장 가까운 ref를 찾아 클릭
 
 **키 입력:**
 - 연속 키 입력 사이 50~200ms 랜덤 딜레이
@@ -157,8 +157,8 @@ file:///e:/Github/Claude_GameMVP_Agent/output/[output_folder]/game.html
 
 1. `browser_navigate`로 위 URL을 엽니다.
 2. 2000ms 대기.
-3. `browser_console_messages` 수집.
-4. `browser_screenshot` → `output/[output_folder]/screenshots/01-initial.png`
+3. `browser_console_messages(level: "warning")` 수집.
+4. `browser_take_screenshot` → `output/[output_folder]/screenshots/01-initial.png`
 
 **에러 감지 후 수정 루프 실행.**
 
@@ -172,14 +172,14 @@ GDD의 `game_type`을 확인하여 시작 방식 결정:
 
 **tap/click / puzzle 게임:**
 1. `browser_snapshot`으로 시작 버튼 탐색
-2. bounding box 내 임의 좌표 클릭 (DOM 없으면 스크린샷 판단)
-3. `browser_console_messages` 수집
-4. `browser_screenshot` → `02-started.png`
+2. 클릭 대상 요소의 `ref` 값 추출 후 `browser_click(ref=..., element=...)`으로 클릭
+3. `browser_console_messages(level: "warning")` 수집
+4. `browser_take_screenshot` → `02-started.png`
 
 **platformer/action 게임:**
 1. `browser_press_key` Space 또는 Enter
-2. `browser_console_messages` 수집
-3. `browser_screenshot` → `02-started.png`
+2. `browser_console_messages(level: "warning")` 수집
+3. `browser_take_screenshot` → `02-started.png`
 
 **에러 감지 후 수정 루프 실행.**
 
@@ -191,24 +191,24 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 
 **tap/click 게임:**
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
-2. 7~12회 랜덤 횟수로 임의 좌표 클릭 (1~2초 랜덤 간격)
-3. `browser_console_messages` 수집
-4. `browser_screenshot` → `03-playing.png`
+2. 7~12회 랜덤 횟수로 요소 ref 기반 클릭 (1~2초 랜덤 간격)
+3. `browser_console_messages(level: "warning")` 수집
+4. `browser_take_screenshot` → `03-playing.png`
 
 **platformer/action 게임:**
-1. `browser_press_key` ArrowRight (1.5~3.5초 랜덤 유지)
+1. `browser_press_key` ArrowRight 5~12회 반복 (각 입력 사이 100~300ms 딜레이)
 2. 딜레이 50~200ms
-3. `browser_press_key` Space 2~4회 (딜레이 포함)
+3. `browser_press_key` Space 2~4회 (각 입력 사이 딜레이 포함)
 4. 딜레이 50~200ms
-5. `browser_press_key` ArrowLeft (0.8~2초 랜덤 유지)
-6. `browser_console_messages` 수집
-7. `browser_screenshot` → `03-playing.png`
+5. `browser_press_key` ArrowLeft 3~8회 반복 (각 입력 사이 100~300ms 딜레이)
+6. `browser_console_messages(level: "warning")` 수집
+7. `browser_take_screenshot` → `03-playing.png`
 
 **puzzle 게임:**
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
-2. 3~5회 임의 순서로 클릭 (딜레이 포함)
-3. `browser_console_messages` 수집
-4. `browser_screenshot` → `03-playing.png`
+2. 3~5회 임의 순서로 ref 기반 클릭 (딜레이 포함)
+3. `browser_console_messages(level: "warning")` 수집
+4. `browser_take_screenshot` → `03-playing.png`
 
 **기타/알 수 없음:**
 - `browser_snapshot` 탐색 후 임의 클릭 + 방향키 + Space 조합
@@ -219,12 +219,14 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 
 ### Step 4 — 재시작
 
+Step 3 이후 스크린샷/snapshot에서 게임오버·재시작 버튼 요소가 감지되지 않으면 Step 4를 skip합니다.
+
 게임오버 화면 감지 후 재시작 액션:
 
 1. `browser_snapshot`으로 재시작 버튼/요소 탐색
-2. bounding box 내 임의 좌표 클릭 (없으면 Space/Enter/R 키 시도)
-3. `browser_console_messages` 수집
-4. `browser_screenshot` → `04-restart.png`
+2. 대상 요소의 `ref` 값 추출 후 `browser_click(ref=..., element=...)`으로 클릭 (없으면 Space/Enter/R 키 시도)
+3. `browser_console_messages(level: "warning")` 수집
+4. `browser_take_screenshot` → `04-restart.png`
 
 **에러 감지 후 수정 루프 실행.**
 
