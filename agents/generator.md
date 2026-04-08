@@ -72,7 +72,7 @@ CONTRACT 모드와 IMPLEMENT 모드 두 가지로 동작한다.
   ⚠️ 비주얼 충실도 조정 (설정: N → 실제: N-1)
      - [요소명]: [사유] → [대체 방법]
   ```
-- **window.__debug 스키마 항상 포함:** game.html의 `<script>` 최상단(CSV loadCSV 함수 정의 직전)에 아래 디버그 객체를 반드시 삽입. `config` 필드는 GDD에서 읽은 실제 설계값으로 채운다.
+- **window.__debug 스키마 항상 포함:** game.html의 `<script>` 최상단(다른 함수/변수 선언보다 먼저)에 아래 디버그 객체를 반드시 삽입. `config` 필드는 GDD에서 읽은 실제 설계값으로 채운다.
 
 ```javascript
 window.__debug = {
@@ -81,13 +81,15 @@ window.__debug = {
     attackCount: 0,
     damageDealt: [],    // [{ amount: N, timestamp: ms }]
     stateChanges: [],   // [{ from: "idle", to: "attack", timestamp: ms }]
-    eventLog: []        // [{ event: "jump", value: null, timestamp: ms }]
+    eventLog: []        // [{ event: "attack", value: damageAmount, timestamp: ms }] — value는 이벤트별 관련값 (없으면 null)
   },
   config: {
-    attackSpeed: null,      // GDD 설계값으로 채울 것 (예: 2)
+    // GDD에서 읽은 핵심 수치를 채운다. null로 두면 해당 항목 검증이 skip됨.
+    // 게임 타입에 따라 필드 추가/제거 가능 (예: jumpHeight, bossHP 등)
+    attackSpeed: null,      // 초당 공격 횟수 (예: 2)
     playerHP: null,         // 플레이어 최대 HP
     enemyHP: null,          // 기본 적 HP
-    damagePerHit: null      // 공격당 데미지 설계값
+    damagePerHit: null      // 공격당 데미지
   },
   verify: {
     getAttackRate: function() {
@@ -108,7 +110,7 @@ window.__debug = {
       var expected = window.__debug.config.damagePerHit;
       if (!expected) return [];
       return window.__debug.stats.damageDealt.filter(function(d) {
-        return Math.abs(d.amount - expected) / expected > 0.2;
+        return Math.abs(d.amount - expected) / expected > 0.2; // 설계값 ±20% 초과를 불일치로 판정
       });
     },
     getSummary: function() {
