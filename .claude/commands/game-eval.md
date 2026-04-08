@@ -323,6 +323,89 @@ Step 3 이후 스크린샷/snapshot에서 게임오버·재시작 버튼 요소�
 
 ---
 
+### Phase 1.5 — 디버그 검증 (Step 4 완료 후)
+
+**`window.__debug` 없으면 skip:** Step 1.5에서 "window.__debug 없음"으로 기록된 경우 이 단계를 건너뛰고 Step 5로 진행한다.
+
+**일괄 검증 실행:**
+`browser_evaluate`로 아래를 실행한다:
+```javascript
+(function() {
+  if (typeof window.__debug === 'undefined') return { error: "no_debug_object" };
+  var s = window.__debug.verify.getSummary();
+  var cfg = window.__debug.config;
+  var results = [];
+
+  if (cfg.attackSpeed) {
+    var ratio = s.attackRate / cfg.attackSpeed;
+    results.push({
+      item: "공격 속도",
+      expected: cfg.attackSpeed + " 회/초",
+      actual: s.attackRate.toFixed(2) + " 회/초",
+      diff: ((ratio - 1) * 100).toFixed(1) + "%",
+      pass: ratio >= 0.8 && ratio <= 1.2
+    });
+  }
+
+  if (s.damageMismatch.length > 0) {
+    results.push({ item: "데미지 수치", expected: cfg.damagePerHit, actual: "불일치 " + s.damageMismatch.length + "건", diff: "-", pass: false });
+  } else if (cfg.damagePerHit) {
+    results.push({ item: "데미지 수치", expected: cfg.damagePerHit, actual: "정상", diff: "0%", pass: true });
+  }
+
+  results.push({
+    item: "상태 전이",
+    expected: "이상 없음",
+    actual: s.stateMismatch.length > 0 ? "이상 " + s.stateMismatch.length + "건" : "정상",
+    diff: "-",
+    pass: s.stateMismatch.length === 0
+  });
+
+  ["attack", "hit"].forEach(function(ev) {
+    var count = s.eventCounts[ev] || 0;
+    results.push({ item: ev + " 이벤트", expected: "1회 이상", actual: count + "회", diff: "-", pass: count >= 1 });
+  });
+
+  return {
+    results: results,
+    eventCounts: s.eventCounts,
+    stateMismatch: s.stateMismatch,
+    overallPass: results.every(function(r) { return r.pass; })
+  };
+})()
+```
+
+**`artifacts/debug_report.md` 작성:**
+
+```markdown
+# Debug Verification Report — Sprint [N]
+**검증일:** [YYYY-MM-DD HH:MM]
+
+## 수치 검증
+| 항목 | 설계값 | 실제값 | 오차 | 결과 |
+|------|-------|-------|------|------|
+[browser_evaluate 결과의 results 배열을 행으로 변환]
+
+## 상태 전이 이상
+| 인덱스 | 기대 | 실제 |
+|-------|------|------|
+[stateMismatch 배열 — 없으면 "이상 없음"]
+
+## 이벤트 발생 횟수
+| 이벤트 | 횟수 |
+|-------|------|
+[eventCounts 객체 — 없으면 "이벤트 없음"]
+
+## 종합 결과: PASS / FAIL
+[FAIL 항목 요약]
+```
+
+**game.html 원본 복원:**
+`artifacts/debug_backup/game.html.bak`을 읽어 `output/[output_folder]/game.html`로 복원한다.
+복원 후 `browser_navigate`로 새로고침.
+
+---
+
 ### Step 5 — browser_report.md 작성
 
 모든 step 완료 후 `artifacts/browser_report.md`를 작성합니다:
@@ -358,6 +441,11 @@ Step 3 이후 스크린샷/snapshot에서 게임오버·재시작 버튼 요소�
 
 ## 크래시/멈춤
 [없음 / 발생 시 step과 증상 기술]
+
+## 디버그 검증 요약
+결과: [PASS / FAIL / SKIP(window.__debug 없음)]
+FAIL 항목: [있으면 항목명 나열, 없으면 "없음"]
+상세: artifacts/debug_report.md 참조
 
 ## 총평
 [플레이 가능 여부, 주요 문제 1-3줄 요약]
