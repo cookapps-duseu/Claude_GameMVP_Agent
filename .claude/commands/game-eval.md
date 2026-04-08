@@ -232,8 +232,25 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 **tap/click 게임:**
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
 2. 7~12회 랜덤 횟수로 요소 ref 기반 클릭 (1~2초 랜덤 간격)
-3. `browser_console_messages(level: "warning")` 수집
-4. `browser_take_screenshot` → `03-playing.png`
+3. **실시간 디버그 감지:**
+   `window.__debug`가 있는 경우 `browser_evaluate`로 아래를 실행한다:
+   ```javascript
+   (function() {
+     if (typeof window.__debug === 'undefined') return { skip: true };
+     var s = window.__debug.verify.getSummary();
+     var cfg = window.__debug.config;
+     var flags = [];
+     if (cfg.attackSpeed && s.attackRate > 0) {
+       var ratio = s.attackRate / cfg.attackSpeed;
+       if (ratio < 0.5 || ratio > 1.5) flags.push("attackRate_mismatch: " + s.attackRate.toFixed(2) + " vs " + cfg.attackSpeed);
+     }
+     if (s.stateMismatch.length > 0) flags.push("state_mismatch: " + s.stateMismatch.length + "건");
+     return { flags: flags, summary: s };
+   })()
+   ```
+   결과의 `flags` 배열이 1건 이상이면 → 즉시 수정 루프 트리거 (에러 감지 A/B/C와 동일하게 처리).
+4. `browser_console_messages(level: "warning")` 수집
+5. `browser_take_screenshot` → `03-playing.png`
 
 **platformer/action 게임:**
 1. `browser_press_key` ArrowRight 5~12회 반복 (각 입력 사이 100~300ms 딜레이)
@@ -241,14 +258,48 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 3. `browser_press_key` Space 2~4회 (각 입력 사이 딜레이 포함)
 4. 딜레이 50~200ms
 5. `browser_press_key` ArrowLeft 3~8회 반복 (각 입력 사이 100~300ms 딜레이)
-6. `browser_console_messages(level: "warning")` 수집
-7. `browser_take_screenshot` → `03-playing.png`
+6. **실시간 디버그 감지:**
+   `window.__debug`가 있는 경우 `browser_evaluate`로 아래를 실행한다:
+   ```javascript
+   (function() {
+     if (typeof window.__debug === 'undefined') return { skip: true };
+     var s = window.__debug.verify.getSummary();
+     var cfg = window.__debug.config;
+     var flags = [];
+     if (cfg.attackSpeed && s.attackRate > 0) {
+       var ratio = s.attackRate / cfg.attackSpeed;
+       if (ratio < 0.5 || ratio > 1.5) flags.push("attackRate_mismatch: " + s.attackRate.toFixed(2) + " vs " + cfg.attackSpeed);
+     }
+     if (s.stateMismatch.length > 0) flags.push("state_mismatch: " + s.stateMismatch.length + "건");
+     return { flags: flags, summary: s };
+   })()
+   ```
+   결과의 `flags` 배열이 1건 이상이면 → 즉시 수정 루프 트리거 (에러 감지 A/B/C와 동일하게 처리).
+7. `browser_console_messages(level: "warning")` 수집
+8. `browser_take_screenshot` → `03-playing.png`
 
 **puzzle 게임:**
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
 2. 3~5회 임의 순서로 ref 기반 클릭 (딜레이 포함)
-3. `browser_console_messages(level: "warning")` 수집
-4. `browser_take_screenshot` → `03-playing.png`
+3. **실시간 디버그 감지:**
+   `window.__debug`가 있는 경우 `browser_evaluate`로 아래를 실행한다:
+   ```javascript
+   (function() {
+     if (typeof window.__debug === 'undefined') return { skip: true };
+     var s = window.__debug.verify.getSummary();
+     var cfg = window.__debug.config;
+     var flags = [];
+     if (cfg.attackSpeed && s.attackRate > 0) {
+       var ratio = s.attackRate / cfg.attackSpeed;
+       if (ratio < 0.5 || ratio > 1.5) flags.push("attackRate_mismatch: " + s.attackRate.toFixed(2) + " vs " + cfg.attackSpeed);
+     }
+     if (s.stateMismatch.length > 0) flags.push("state_mismatch: " + s.stateMismatch.length + "건");
+     return { flags: flags, summary: s };
+   })()
+   ```
+   결과의 `flags` 배열이 1건 이상이면 → 즉시 수정 루프 트리거 (에러 감지 A/B/C와 동일하게 처리).
+4. `browser_console_messages(level: "warning")` 수집
+5. `browser_take_screenshot` → `03-playing.png`
 
 **기타/알 수 없음:**
 - `browser_snapshot` 탐색 후 임의 클릭 + 방향키 + Space 조합
