@@ -231,7 +231,7 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 
 **[인게임 전환 확인] 플레이 액션 전 — 모든 game_type 공통:**
 
-`browser_evaluate`로 아래를 실행한다:
+500ms 대기 후 (비동기 초기화 완료 보장) `browser_evaluate`로 아래를 실행한다:
 
 ```javascript
 (function() {
@@ -252,7 +252,7 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
 2. 7~12회 랜덤 횟수로 요소 ref 기반 클릭 (1~2초 랜덤 간격)
 3. **[인게임 입력 반응 확인] 플레이 액션 후:**
-   `browser_evaluate`로 아래를 실행한다:
+   300ms 대기 후 (requestAnimationFrame 처리 완료 보장) `browser_evaluate`로 아래를 실행한다:
    ```javascript
    (function() {
      if (typeof window.__debug === 'undefined') return { skip: true };
@@ -291,7 +291,7 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 4. 딜레이 50~200ms
 5. `browser_press_key` ArrowLeft 3~8회 반복 (각 입력 사이 100~300ms 딜레이)
 6. **[인게임 입력 반응 확인] 플레이 액션 후:**
-   `browser_evaluate`로 아래를 실행한다:
+   300ms 대기 후 (requestAnimationFrame 처리 완료 보장) `browser_evaluate`로 아래를 실행한다:
    ```javascript
    (function() {
      if (typeof window.__debug === 'undefined') return { skip: true };
@@ -327,7 +327,7 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
 2. 3~5회 임의 순서로 ref 기반 클릭 (딜레이 포함)
 3. **[인게임 입력 반응 확인] 플레이 액션 후:**
-   `browser_evaluate`로 아래를 실행한다:
+   300ms 대기 후 (requestAnimationFrame 처리 완료 보장) `browser_evaluate`로 아래를 실행한다:
    ```javascript
    (function() {
      if (typeof window.__debug === 'undefined') return { skip: true };
