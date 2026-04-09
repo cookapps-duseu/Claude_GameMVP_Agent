@@ -154,7 +154,9 @@ window.__debug.stats.stateChanges.push({ from: prevState, to: newState, timestam
 
   function cleanup() {
     if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
-    // 이전 상태 이벤트 리스너 제거 (addEventListener로 등록한 것을 removeEventListener로 제거)
+    // 반드시 기명 함수 참조로 제거 (익명 함수는 removeEventListener로 제거 불가)
+    // 예: document.removeEventListener('keydown', handleKeyDown);
+    //     canvas.removeEventListener('click', handleClick);
   }
 
   function enterState(newState) {
