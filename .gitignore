@@ -3,3 +3,4 @@ output/*/screenshots/
 /output
 /artifacts
 /artifacts
+/.playwright-mcp

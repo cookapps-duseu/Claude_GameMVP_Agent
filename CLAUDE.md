@@ -15,6 +15,7 @@
 | "재시도해줘", "다시 시도해줘" + `pending_retry: true` 상태 | `harness_state.md` 확인 후 `/game-eval N` 실행 (retry_feedback.md 컨텍스트 포함) |
 | "충실도 바꿔줘", "더 비슷하게", "덜 비슷하게", "대충 해줘" + 숫자/키워드 | `harness_state.md`의 `visual_fidelity` 업데이트 후 고지 |
 | `/game-fidelity N` | `visual_fidelity` N으로 변경 |
+| "룰 검토해줘", "에이전트 고쳐줘", "qa 룰이 이상해" | SelfRepairDiagnoser 즉시 실행 (자가 수복 루틴 진입) |
 
 ### 충실도 자연어 매핑
 
