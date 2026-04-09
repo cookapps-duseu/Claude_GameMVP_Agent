@@ -229,10 +229,42 @@ GDD의 `game_type`을 확인하여 시작 방식 결정:
 
 GDD의 `game_type`에 따라 인간형 시나리오 실행:
 
+**[인게임 전환 확인] 플레이 액션 전 — 모든 game_type 공통:**
+
+`browser_evaluate`로 아래를 실행한다:
+
+```javascript
+(function() {
+  if (typeof window.__debug === 'undefined') return { skip: true };
+  var changes = window.__debug.stats.stateChanges;
+  var inIngame = changes.some(function(s) { return s.to === 'ingame'; });
+  return { inIngame: inIngame, stateChanges: changes };
+})()
+```
+
+- `skip: true` → window.__debug 없음, 이 검증 skip
+- `inIngame === false` → **[인게임 전환 실패]** 즉시 수정 루프 트리거
+  - 에러 메시지: `"[인게임 전환 실패] stateChanges에 to:'ingame' 없음 — enterState('ingame') 호출 누락 또는 상태 명칭 불일치"`
+
+---
+
 **tap/click 게임:**
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
 2. 7~12회 랜덤 횟수로 요소 ref 기반 클릭 (1~2초 랜덤 간격)
-3. **실시간 디버그 감지:**
+3. **[인게임 입력 반응 확인] 플레이 액션 후:**
+   `browser_evaluate`로 아래를 실행한다:
+   ```javascript
+   (function() {
+     if (typeof window.__debug === 'undefined') return { skip: true };
+     var inIngame = window.__debug.stats.stateChanges.some(function(s) { return s.to === 'ingame'; });
+     var eventCount = window.__debug.stats.eventLog.length;
+     return { inIngame: inIngame, eventCount: eventCount };
+   })()
+   ```
+   - `inIngame === true && eventCount === 0` → **[인게임 입력 불능]** 즉시 수정 루프 트리거
+     - 에러 메시지: `"[인게임 입력 불능] ingame 전환 후 eventLog 비어있음 — 이벤트 리스너 미등록 또는 게임 루프 미시작"`
+   - `inIngame === false` → 이미 위에서 처리됨, skip
+4. **실시간 디버그 감지:**
    `window.__debug`가 있는 경우 `browser_evaluate`로 아래를 실행한다:
    ```javascript
    (function() {
@@ -249,8 +281,8 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
    })()
    ```
    결과의 `flags` 배열이 1건 이상이면 → 즉시 수정 루프 트리거 (에러 감지 A/B/C와 동일하게 처리).
-4. `browser_console_messages(level: "warning")` 수집
-5. `browser_take_screenshot` → `03-playing.png`
+5. `browser_console_messages(level: "warning")` 수집
+6. `browser_take_screenshot` → `03-playing.png`
 
 **platformer/action 게임:**
 1. `browser_press_key` ArrowRight 5~12회 반복 (각 입력 사이 100~300ms 딜레이)
@@ -258,7 +290,20 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 3. `browser_press_key` Space 2~4회 (각 입력 사이 딜레이 포함)
 4. 딜레이 50~200ms
 5. `browser_press_key` ArrowLeft 3~8회 반복 (각 입력 사이 100~300ms 딜레이)
-6. **실시간 디버그 감지:**
+6. **[인게임 입력 반응 확인] 플레이 액션 후:**
+   `browser_evaluate`로 아래를 실행한다:
+   ```javascript
+   (function() {
+     if (typeof window.__debug === 'undefined') return { skip: true };
+     var inIngame = window.__debug.stats.stateChanges.some(function(s) { return s.to === 'ingame'; });
+     var eventCount = window.__debug.stats.eventLog.length;
+     return { inIngame: inIngame, eventCount: eventCount };
+   })()
+   ```
+   - `inIngame === true && eventCount === 0` → **[인게임 입력 불능]** 즉시 수정 루프 트리거
+     - 에러 메시지: `"[인게임 입력 불능] ingame 전환 후 eventLog 비어있음 — 이벤트 리스너 미등록 또는 게임 루프 미시작"`
+   - `inIngame === false` → 이미 위에서 처리됨, skip
+7. **실시간 디버그 감지:**
    `window.__debug`가 있는 경우 `browser_evaluate`로 아래를 실행한다:
    ```javascript
    (function() {
@@ -275,13 +320,26 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
    })()
    ```
    결과의 `flags` 배열이 1건 이상이면 → 즉시 수정 루프 트리거 (에러 감지 A/B/C와 동일하게 처리).
-7. `browser_console_messages(level: "warning")` 수집
-8. `browser_take_screenshot` → `03-playing.png`
+8. `browser_console_messages(level: "warning")` 수집
+9. `browser_take_screenshot` → `03-playing.png`
 
 **puzzle 게임:**
 1. `browser_snapshot`으로 클릭 가능 요소 탐색
 2. 3~5회 임의 순서로 ref 기반 클릭 (딜레이 포함)
-3. **실시간 디버그 감지:**
+3. **[인게임 입력 반응 확인] 플레이 액션 후:**
+   `browser_evaluate`로 아래를 실행한다:
+   ```javascript
+   (function() {
+     if (typeof window.__debug === 'undefined') return { skip: true };
+     var inIngame = window.__debug.stats.stateChanges.some(function(s) { return s.to === 'ingame'; });
+     var eventCount = window.__debug.stats.eventLog.length;
+     return { inIngame: inIngame, eventCount: eventCount };
+   })()
+   ```
+   - `inIngame === true && eventCount === 0` → **[인게임 입력 불능]** 즉시 수정 루프 트리거
+     - 에러 메시지: `"[인게임 입력 불능] ingame 전환 후 eventLog 비어있음 — 이벤트 리스너 미등록 또는 게임 루프 미시작"`
+   - `inIngame === false` → 이미 위에서 처리됨, skip
+4. **실시간 디버그 감지:**
    `window.__debug`가 있는 경우 `browser_evaluate`로 아래를 실행한다:
    ```javascript
    (function() {
@@ -298,8 +356,8 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
    })()
    ```
    결과의 `flags` 배열이 1건 이상이면 → 즉시 수정 루프 트리거 (에러 감지 A/B/C와 동일하게 처리).
-4. `browser_console_messages(level: "warning")` 수집
-5. `browser_take_screenshot` → `03-playing.png`
+5. `browser_console_messages(level: "warning")` 수집
+6. `browser_take_screenshot` → `03-playing.png`
 
 **기타/알 수 없음:**
 - `browser_snapshot` 탐색 후 임의 클릭 + 방향키 + Space 조합
