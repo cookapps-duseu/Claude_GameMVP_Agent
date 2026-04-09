@@ -138,6 +138,8 @@ window.__debug.stats.damageDealt.push({ amount: damage, timestamp: Date.now() })
 
 // 상태 전이 시 (예: idle → attack)
 window.__debug.stats.stateChanges.push({ from: prevState, to: newState, timestamp: Date.now() });
+// ⚠️ 주의: enterState() 함수를 사용하는 경우 위 stateChanges 로깅은 enterState() 내부에서 이미 처리됨.
+// enterState()와 인라인 로깅을 동시에 사용하면 동일 전이가 이중 기록되어 getStateMismatch() 오탐 발생.
 ```
 
 - **상태 전환 패턴 (반드시 준수):** 게임은 outgame / ingame / gameover 3개 상태를 명확히 분리해야 한다. 각 상태 전환 시 반드시 아래 순서를 따른다:

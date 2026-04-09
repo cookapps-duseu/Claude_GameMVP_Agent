@@ -360,7 +360,20 @@ GDD의 `game_type`에 따라 인간형 시나리오 실행:
 6. `browser_take_screenshot` → `03-playing.png`
 
 **기타/알 수 없음:**
-- `browser_snapshot` 탐색 후 임의 클릭 + 방향키 + Space 조합
+1. `browser_snapshot` 탐색 후 임의 클릭 + 방향키 + Space 조합
+2. **[인게임 입력 반응 확인] 플레이 액션 후:**
+   300ms 대기 후 (requestAnimationFrame 처리 완료 보장) `browser_evaluate`로 아래를 실행한다:
+   ```javascript
+   (function() {
+     if (typeof window.__debug === 'undefined') return { skip: true };
+     var inIngame = window.__debug.stats.stateChanges.some(function(s) { return s.to === 'ingame'; });
+     var eventCount = window.__debug.stats.eventLog.length;
+     return { inIngame: inIngame, eventCount: eventCount };
+   })()
+   ```
+   - `inIngame === true && eventCount === 0` → **[인게임 입력 불능]** 즉시 수정 루프 트리거
+     - 에러 메시지: `"[인게임 입력 불능] ingame 전환 후 eventLog 비어있음 — 이벤트 리스너 미등록 또는 게임 루프 미시작"`
+   - `inIngame === false` → 이미 위에서 처리됨, skip
 
 **에러 감지 후 수정 루프 실행.**
 
