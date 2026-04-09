@@ -140,6 +140,34 @@ window.__debug.stats.damageDealt.push({ amount: damage, timestamp: Date.now() })
 window.__debug.stats.stateChanges.push({ from: prevState, to: newState, timestamp: Date.now() });
 ```
 
+- **상태 전환 패턴 (반드시 준수):** 게임은 outgame / ingame / gameover 3개 상태를 명확히 분리해야 한다. 각 상태 전환 시 반드시 아래 순서를 따른다:
+  1. 이전 상태의 이벤트 리스너 제거 (`removeEventListener`)
+  2. `cancelAnimationFrame`으로 게임 루프 중단
+  3. 게임 변수 초기화
+  4. 새 상태의 이벤트 리스너 등록
+  5. `requestAnimationFrame` 루프 재시작
+
+  **필수 패턴:**
+  ```javascript
+  let currentState = 'outgame';
+  let animFrameId = null;
+
+  function cleanup() {
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+    // 이전 상태 이벤트 리스너 제거 (addEventListener로 등록한 것을 removeEventListener로 제거)
+  }
+
+  function enterState(newState) {
+    var prev = currentState;
+    cleanup();
+    currentState = newState;
+    window.__debug.stats.stateChanges.push({ from: prev, to: newState, timestamp: Date.now() });
+    if (newState === 'ingame') initGame();
+    else if (newState === 'gameover') showGameOver();
+    else if (newState === 'outgame') showTitle();
+  }
+  ```
+
 **CSV 로드 패턴 (반드시 사용):**
 ```javascript
 async function loadCSV(filename) {
@@ -168,6 +196,8 @@ async function loadCSV(filename) {
 - [ ] window.__debug 객체가 <script> 최상단에 포함되어 있는가
 - [ ] window.__debug.config의 설계값이 GDD 수치로 채워져 있는가 (null 아님)
 - [ ] 핵심 로직(공격/데미지/상태 전이)에 __debug 로깅 호출이 삽입되어 있는가
+- [ ] 상태 전환 시 이전 이벤트 리스너를 제거하는가 (`removeEventListener` 사용)
+- [ ] 인게임 진입 시 게임 루프가 새로 시작되는가 (`requestAnimationFrame` 재호출)
 
 ### 재시도 시 주의사항
 
